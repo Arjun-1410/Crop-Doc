@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="te">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CropDoc AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;600;800&family=Noto+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: one-thumb phone column; pick crop, snap, read a colour-coded verdict; everything big enough for a field. */
+:root{
+  --leaf:#1f6b3a; --leaf-soft:#e3f1e6; --soil:#6b4a2b; --sun:#e9a800; --alarm:#b3261e;
+  --bg:#f5f3ea; --card:#ffffff; --ink:#1b2318; --muted:#5b6553; --line:#dad6c6;
+  --warn-bg:#fff3d1; --bad-bg:#fde6e2; --ok-bg:#e3f1e6; --on-leaf:#ffffff;
+  --font:"Noto Sans Telugu","Noto Sans",system-ui,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --leaf:#72d08d; --leaf-soft:#1b2d21; --soil:#d9b48a; --sun:#f2c53d; --alarm:#ff8f86;
+  --bg:#11160f; --card:#1a2116; --ink:#eef1e6; --muted:#a8b29c; --line:#2d3627;
+  --warn-bg:#3a3012; --bad-bg:#3d1f1c; --ok-bg:#1b2d21; --on-leaf:#0d1a10; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --leaf:#72d08d; --leaf-soft:#1b2d21; --soil:#d9b48a; --sun:#f2c53d; --alarm:#ff8f86;
+  --bg:#11160f; --card:#1a2116; --ink:#eef1e6; --muted:#a8b29c; --line:#2d3627;
+  --warn-bg:#3a3012; --bad-bg:#3d1f1c; --ok-bg:#1b2d21; --on-leaf:#0d1a10; color-scheme:dark;}
+
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:18px;line-height:1.55}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:4px solid var(--sun);outline-offset:2px}
+img{max-width:100%}
+.app{max-width:500px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px 4px;gap:12px}
+.brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:21px;color:var(--leaf);line-height:1.1}
+.brand small{display:block;font-size:12px;font-weight:600;color:var(--muted)}
+.brand svg{width:34px;height:34px;flex:none}
+.lang{display:flex;border:2px solid var(--leaf);border-radius:999px;overflow:hidden;flex:none}
+.lang button{border:0;background:transparent;padding:6px 12px;font-weight:700;font-size:15px;min-height:42px}
+.lang button[aria-pressed="true"]{background:var(--leaf);color:var(--on-leaf)}
+main{flex:1;padding:8px 16px 100px;display:flex;flex-direction:column;gap:14px}
+h1{font-size:25px;line-height:1.25;margin:4px 0 0;font-weight:800;text-wrap:balance}
+h2{font-size:19px;margin:0 0 8px;font-weight:800;text-wrap:balance}
+p{margin:0}
+.muted{color:var(--muted);font-size:15px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px 16px}
+.row{display:flex;gap:10px;align-items:center}
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:60px;border-radius:16px;border:0;font-weight:800;font-size:19px;padding:10px 16px;text-align:center;text-decoration:none}
+.btn svg{width:28px;height:28px;flex:none}
+.btn-main{background:var(--leaf);color:var(--on-leaf);min-height:84px;font-size:22px;box-shadow:0 4px 0 rgba(0,0,0,.18)}
+.btn-alt{background:var(--card);border:3px solid var(--leaf);color:var(--leaf)}
+.btn-soft{background:var(--leaf-soft);color:var(--leaf)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn:active{transform:translateY(2px)}
+.season{border-left:6px solid var(--sun);background:var(--warn-bg);border-radius:14px;padding:12px 14px}
+.season b{display:block;font-size:17px}
+.season p{font-size:15px}
+.step-h{display:flex;align-items:center;gap:8px;font-weight:800;font-size:18px}
+.step-h i{font-style:normal;width:30px;height:30px;border-radius:50%;background:var(--leaf);color:var(--on-leaf);display:grid;place-items:center;font-size:15px;flex:none}
+.crops{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.crop{border:3px solid var(--line);background:var(--card);border-radius:14px;padding:4px 2px 6px;display:flex;flex-direction:column;align-items:center;gap:2px;font-weight:700;font-size:14px;min-height:96px}
+.crop img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px}
+.crop[aria-pressed="true"]{border-color:var(--leaf);background:var(--leaf-soft);color:var(--leaf)}
+.status{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted)}
+.status .d{width:10px;height:10px;border-radius:50%;background:var(--sun);flex:none}
+.status.ok .d{background:var(--leaf)} .status.err .d{background:var(--alarm)}
+.samples{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;scroll-snap-type:x mandatory}
+.sample{flex:none;width:112px;border:2px solid var(--line);background:var(--card);border-radius:14px;padding:4px;font-size:13px;font-weight:600;text-align:center;scroll-snap-align:start;line-height:1.3}
+.sample img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;display:block;margin-bottom:4px}
+.tips{margin:0;padding-left:20px;font-size:15px;display:flex;flex-direction:column;gap:4px}
+/* result */
+.photo{width:100%;border-radius:16px;display:block;max-height:260px;object-fit:cover;background:var(--leaf-soft)}
+.verdict{border-radius:20px;padding:16px;border:3px solid}
+.verdict.ok{background:var(--ok-bg);border-color:var(--leaf)}
+.verdict.warn{background:var(--warn-bg);border-color:var(--sun)}
+.verdict.bad{background:var(--bad-bg);border-color:var(--alarm)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:13px;font-weight:700;border-radius:999px;padding:2px 10px;background:var(--card);border:1px solid var(--line)}
+.verdict .name{font-size:27px;font-weight:800;line-height:1.2;margin:8px 0 10px;text-wrap:balance}
+.meter{height:18px;border-radius:999px;background:rgba(127,127,127,.22);overflow:hidden}
+.meter span{display:block;height:100%;border-radius:999px;background:var(--leaf)}
+.warn .meter span{background:var(--sun)} .bad .meter span{background:var(--alarm)}
+.meter-label{display:flex;justify-content:space-between;font-weight:700;font-size:16px;margin-top:6px;font-variant-numeric:tabular-nums}
+.alert{border-radius:14px;padding:12px 14px;background:var(--warn-bg);border:2px solid var(--sun);font-size:16px}
+.alert .btn{min-height:48px;font-size:16px;margin-top:8px}
+ol.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px;counter-reset:t}
+ol.steps li{display:flex;gap:12px;align-items:flex-start}
+ol.steps li::before{counter-increment:t;content:counter(t);flex:none;width:32px;height:32px;border-radius:50%;background:var(--leaf);color:var(--on-leaf);font-weight:800;display:grid;place-items:center;margin-top:1px}
+.spray{border:2px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.spray b{font-size:18px}
+.dose{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center}
+.dose div{background:var(--leaf-soft);border-radius:10px;padding:6px 2px;font-size:13px;color:var(--muted)}
+.dose div strong{display:block;font-size:19px;color:var(--ink);font-variant-numeric:tabular-nums}
+.acres{display:flex;align-items:center;gap:10px;justify-content:space-between}
+.acres .ctl{display:flex;align-items:center;gap:6px}
+.acres button{width:48px;height:48px;border-radius:12px;border:2px solid var(--leaf);background:var(--card);color:var(--leaf);font-size:24px;font-weight:800}
+.acres output{min-width:56px;text-align:center;font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+.safety{font-size:15px;color:var(--muted);display:flex;flex-direction:column;gap:4px;margin:0;padding-left:18px}
+.alts{display:flex;flex-direction:column;gap:8px}
+.alt{display:flex;justify-content:space-between;gap:10px;font-size:16px}
+.alt span:last-child{font-weight:700;font-variant-numeric:tabular-nums}
+.fb{display:flex;gap:10px}
+.pick{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.pick button{min-height:48px;border-radius:12px;border:2px solid var(--line);background:var(--card);text-align:left;padding:8px 12px;font-size:16px}
+.thanks{font-weight:700;color:var(--leaf)}
+.spinner{width:72px;height:72px;border-radius:50%;border:9px solid var(--leaf-soft);border-top-color:var(--leaf);animation:spin 1s linear infinite;margin:20px auto 8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spinner{animation-duration:3s}.btn:active{transform:none}}
+.center{text-align:center}
+.hist{display:flex;gap:12px;align-items:center}
+.hist img{width:56px;height:56px;border-radius:10px;object-fit:cover;flex:none;background:var(--leaf-soft)}
+.hist .pill{margin-left:auto;font-weight:800;font-size:15px;flex:none;font-variant-numeric:tabular-nums}
+.hist .dot{width:12px;height:12px;border-radius:50%;flex:none}
+.contact{display:flex;flex-direction:column;gap:2px}
+.contact .num{font-size:22px;font-weight:800;color:var(--leaf);text-decoration:none;font-variant-numeric:tabular-nums}
+table.cal{width:100%;border-collapse:collapse;font-size:15px}
+table.cal td{padding:6px 4px;border-top:1px solid var(--line);vertical-align:top}
+table.cal td:first-child{font-weight:700;white-space:nowrap}
+table.m{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+table.m th,table.m td{padding:4px;border-top:1px solid var(--line);text-align:left}
+table.m td:last-child,table.m th:last-child{text-align:right}
+nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--line);z-index:5}
+nav .in{max-width:500px;margin:0 auto;display:flex}
+nav button{flex:1;border:0;background:transparent;padding:8px 4px 10px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:13px;font-weight:700;color:var(--muted);min-height:62px}
+nav button svg{width:26px;height:26px}
+nav button[aria-current="page"]{color:var(--leaf)}
+.toast{position:fixed;left:16px;right:16px;bottom:82px;max-width:468px;margin:0 auto;background:var(--ink);color:var(--bg);padding:12px 16px;border-radius:14px;font-size:16px;z-index:9}
+.hidden{display:none!important}
+input[type=file]{display:none}
+textarea{width:100%;font:inherit;font-size:16px;border:2px solid var(--line);border-radius:14px;padding:10px;background:var(--bg);color:var(--ink);min-height:110px}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="19" fill="currentColor" opacity=".14"/><path d="M12 28c0-9 6-15 17-16 0 10-6 17-15 17-1 0-2 0-2-1z" fill="currentColor"/><path d="M12 29c4-5 8-9 13-13" stroke="var(--bg)" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      <div>CropDoc AI<small id="region"></small></div>
+    </div>
+    <div class="lang" role="group" aria-label="Language">
+      <button id="lte" aria-pressed="true">తెలుగు</button>
+      <button id="len" aria-pressed="false">EN</button>
+    </div>
+  </header>
+  <main id="view"></main>
+</div>
+<nav><div class="in" id="nav"></div></nav>
+<input type="file" id="cam" accept="image/*" capture="environment">
+<input type="file" id="gal" accept="image/*">
+<div class="toast hidden" id="toast" role="status"></div>
+
+<script src="ort/ort.wasm.min.js"></script>
+<script>
+/*ADVICE*/
+const MODEL = /*MODELINFO*/;
+</script>
+<script>
+"use strict";
+/* ================= text ================= */
+const UI = {
+ region:{te:"హైదరాబాద్ ప్రాంతం · తెలంగాణ",en:"Hyderabad region · Telangana"},
+ pickCrop:{te:"పంట ఎంచుకోండి",en:"Choose your crop"},
+ snap:{te:"ఆకు ఫోటో తీయండి",en:"Photograph the leaf"},
+ take:{te:"ఫోటో తీయండి",en:"Take photo"}, gal:{te:"గ్యాలరీ నుండి",en:"From gallery"},
+ needCrop:{te:"ముందుగా పై నుండి పంట ఎంచుకోండి",en:"First choose your crop above"},
+ tryS:{te:"ఉదాహరణ ఫోటోలతో ప్రయత్నించండి",en:"Try with example photos"},
+ trySub:{te:"ఇవి AI శిక్షణలో వాడని నిజమైన పరీక్ష ఫోటోలు.",en:"Real test photos the AI never saw in training."},
+ tipsH:{te:"మంచి ఫోటో కోసం",en:"For a good photo"},
+ tips:{te:["ఒకే ఆకు, ఫ్రేమ్ నిండా","పగటి వెలుతురు, నీడ లేకుండా","తెగులు ఉన్న భాగం మధ్యలో","కదలకుండా, స్పష్టంగా"],en:["One leaf filling the frame","Daylight, no harsh shadow","Sick part in the centre","Hold still, keep it sharp"]},
+ mLoad:{te:"AI లోడ్ అవుతోంది",en:"Loading AI"}, mOk:{te:"AI సిద్ధం · ఫోన్‌లోనే పనిచేస్తుంది",en:"AI ready · runs on your phone"},
+ mErr:{te:"AI లోడ్ కాలేదు. పేజీని మళ్లీ తెరవండి.",en:"AI could not load. Please reopen the page."},
+ scanning:{te:"AI ఆకును పరిశీలిస్తోంది…",en:"AI is checking the leaf…"},
+ sure:{te:"ఖచ్చితత్వం",en:"Confidence"},
+ bandHi:{te:"నమ్మకంగా",en:"Confident"}, bandMid:{te:"బహుశా",en:"Possible"}, bandLo:{te:"ఖచ్చితంగా చెప్పలేం",en:"Not sure"},
+ midNote:{te:"AI పూర్తిగా ఖచ్చితంగా లేదు. మందు కొట్టే ముందు కింది ఇతర అవకాశాలు కూడా చూడండి లేదా నిపుణుడిని అడగండి.",en:"The AI is not fully sure. Check the other possibilities below or ask an expert before you spray."},
+ loTitle:{te:"ఖచ్చితంగా చెప్పలేం",en:"We are not sure"},
+ loNote:{te:"ఈ ఫోటో నుండి తెగులు గుర్తించలేకపోయాం. మందు కొట్టవద్దు. దగ్గరగా, పగటి వెలుతురులో మళ్లీ తీయండి లేదా నిపుణుడిని అడగండి.",en:"We could not identify the problem from this photo. Do not spray yet. Retake it closer in daylight, or ask an expert."},
+ dark:{te:"ఫోటో చీకటిగా ఉంది. పగటి వెలుతురులో తీయండి.",en:"The photo is dark. Take it in daylight."},
+ bright:{te:"ఫోటో చాలా వెలుతురుగా ఉంది. నీడలో తీయండి.",en:"The photo is too bright. Take it in shade."},
+ blur:{te:"ఫోటో మసకగా ఉంది. ఫోన్ కదలకుండా పట్టుకుని మళ్లీ తీయండి.",en:"The photo is blurry. Hold the phone still and retake."},
+ mismatch:{te:"ఇది {c} ఆకులా కనిపిస్తోంది. పంట సరిగ్గా ఎంచుకున్నారా?",en:"This looks like a {c} leaf. Did you pick the right crop?"},
+ switchTo:{te:"{c} గా మార్చి మళ్లీ చూడండి",en:"Switch to {c} and recheck"},
+ listen:{te:"తెలుగులో వినండి",en:"Listen in Telugu"}, stop:{te:"ఆపండి",en:"Stop"},
+ what:{te:"ఇది ఏమిటి",en:"What it is"}, todo:{te:"ఏం చేయాలి",en:"What to do"},
+ med:{te:"మందు మోతాదు",en:"Spray dose"}, acres:{te:"మీ పొలం (ఎకరాలు)",en:"Your field (acres)"},
+ perL:{te:"లీటరుకు",en:"per litre"}, perTank:{te:"16 లీ. ట్యాంకుకు",en:"per 16 L tank"}, perField:{te:"మొత్తం పొలానికి",en:"whole field"},
+ perAcre:{te:"ఎకరానికి",en:"per acre"}, tanks:{te:"ఎకరానికి 200 లీ. నీరు (≈13 ట్యాంకులు)",en:"200 L water per acre (about 13 tanks)"},
+ oneMed:{te:"ఒకటి కంటే ఎక్కువ మందులు ఉంటే, ఏదో ఒకటి మాత్రమే వాడండి.",en:"If more than one is listed, use only one of them."},
+ safety:{te:["మాస్క్, చేతి తొడుగులు వేసుకోండి.","ఉదయం లేదా సాయంత్రం, గాలి లేనప్పుడు కొట్టండి.","డబ్బా పై లేబుల్ చదవండి. కోతకు ముందు ఆగాల్సిన రోజులు పాటించండి.","మందు కొనే ముందు AEO లేదా KVK తో నిర్ధారించుకోండి."],
+         en:["Wear a mask and gloves.","Spray in the morning or evening when there is no wind.","Read the label and keep the waiting days before harvest.","Confirm with your AEO or KVK before buying."]},
+ noSpray:{te:"దీనికి మందు అవసరం లేదు లేదా పనిచేసే మందు లేదు.",en:"No spray is needed, or none works for this."},
+ alts:{te:"ఇతర అవకాశాలు",en:"Other possibilities"},
+ right:{te:"ఈ ఫలితం సరైనదేనా?",en:"Was this right?"}, yes:{te:"అవును",en:"Yes"}, no:{te:"కాదు",en:"No"},
+ whichOne:{te:"సరైనది ఏది? (తెలిస్తే ఎంచుకోండి)",en:"Which one was it? (pick if you know)"},
+ dunno:{te:"తెలియదు",en:"I don't know"},
+ thanks:{te:"ధన్యవాదాలు! మీ సమాధానం AI ని మెరుగుపరచడానికి సేవ్ అయ్యింది.",en:"Thank you! Your answer is saved to help improve the AI."},
+ ask:{te:"నిపుణుడిని అడగండి",en:"Ask an expert"},
+ askSub:{te:"ఈ సందేశాన్ని మీ AEO, KVK లేదా రైతు గ్రూప్‌కు పంపండి. ఫోటో కూడా జత చేయండి.",en:"Send this message to your AEO, KVK or farmer group. Attach the photo too."},
+ copy:{te:"సందేశం కాపీ చేయండి",en:"Copy message"}, wa:{te:"వాట్సాప్‌లో పంపండి",en:"Send on WhatsApp"},
+ copied:{te:"కాపీ అయ్యింది",en:"Copied"}, copyFail:{te:"కాపీ కాలేదు. సందేశాన్ని ఎంచుకుని కాపీ చేయండి.",en:"Could not copy. Select the message and copy it."},
+ again:{te:"మరో ఆకు పరిశీలించండి",en:"Check another leaf"},
+ hist:{te:"గత పరిశీలనలు",en:"Past checks"}, noHist:{te:"ఇంకా పరిశీలనలు లేవు.",en:"No checks yet."},
+ histNote:{te:"ఈ ఫోన్‌లో మాత్రమే సేవ్ అవుతాయి.",en:"Saved on this phone only."},
+ exportH:{te:"టీమ్ కోసం డేటా",en:"Data for the team"}, exportB:{te:"ఫలితాలు కాపీ చేయండి (CSV)",en:"Copy results (CSV)"},
+ help:{te:"సహాయం",en:"Help"},
+ kcc:{te:"కిసాన్ కాల్ సెంటర్ (ఉచితం, తెలుగులో)",en:"Kisan Call Centre (free, in Telugu)"},
+ kccT:{te:"ప్రతిరోజు ఉదయం 6 నుండి రాత్రి 10 వరకు",en:"Every day, 6 AM to 10 PM"},
+ kvk:{te:"కృషి విజ్ఞాన కేంద్రం (KVK), రంగారెడ్డి జిల్లా",en:"Krishi Vigyan Kendra (KVK), Ranga Reddy district"},
+ kvkT:{te:"CRIDA హయత్‌నగర్ రీసెర్చ్ ఫార్మ్, హైదరాబాద్",en:"CRIDA Hayathnagar Research Farm, Hyderabad"},
+ aeo:{te:"మీ గ్రామ వ్యవసాయ విస్తరణ అధికారి (AEO)",en:"Your village Agriculture Extension Officer (AEO)"},
+ aeoT:{te:"మీ క్లస్టర్ రైతు వేదికలో కలవండి.",en:"Meet them at your cluster Rythu Vedika."},
+ calH:{te:"తెలంగాణ పంట కాలాలు",en:"Telangana crop seasons"},
+ aboutH:{te:"ఈ AI గురించి",en:"About this AI"},
+ disclaim:{te:"ఇది సహాయ సాధనం మాత్రమే. AI తప్పు చెప్పవచ్చు. పెద్ద నష్టం లేదా ఖరీదైన మందు ముందు నిపుణుడిని తప్పక అడగండి.",en:"This is a helper tool only. The AI can be wrong. Always ask an expert before big losses or costly sprays."},
+ nHome:{te:"పరిశీలన",en:"Check"}, nHist:{te:"చరిత్ర",en:"History"}, nHelp:{te:"సహాయం",en:"Help"},
+ novoice:{te:"ఈ ఫోన్‌లో తెలుగు వాయిస్ లేదు. ఫోన్ సెట్టింగ్స్‌లో Telugu text-to-speech జోడించండి.",en:"No Telugu voice on this phone. Add Telugu text-to-speech in phone settings."},
+ openFail:{te:"ఫోటో తెరవలేకపోయాం. మళ్లీ ప్రయత్నించండి.",en:"Could not open that photo. Please try again."},
+ photoOf:{te:"ఫోటో",en:"Photo"}
+};
+const SEASONS = [
+ {m:[6,7,8,9,10], te:"వానాకాలం (ఖరీఫ్)", en:"Vanakalam (Kharif)",
+  watchTe:"పత్తిలో పచ్చదోమ, ఆకు ఎర్రబడటం; వరిలో ఎండాకు తెగులు, కాండం తొలుచు పురుగు కోసం జాగ్రత్త.",
+  watchEn:"Watch cotton for jassids and leaf reddening, paddy for bacterial leaf blight and stem borer."},
+ {m:[11,12,1,2,3], te:"యాసంగి (రబీ)", en:"Yasangi (Rabi)",
+  watchTe:"చల్లని రాత్రులలో వరిలో అగ్గి తెగులు; మొక్కజొన్నలో కత్తెర పురుగు; మిరపలో తామర పురుగు, నల్లి కోసం జాగ్రత్త.",
+  watchEn:"Cool nights bring paddy blast; watch maize for fall armyworm and chilli for thrips and mites."},
+ {m:[4,5], te:"వేసవి", en:"Summer",
+  watchTe:"కూరగాయలలో ఎర్రనల్లి, తెల్లదోమ ఎక్కువ. ఉదయం నీరు పెట్టండి.",
+  watchEn:"Mites and whitefly rise in vegetables. Water in the morning."}
+];
+const CAL = [
+ {te:"జూన్–అక్టోబర్",en:"Jun–Oct",sTe:"వానాకాలం: పత్తి, వరి, మొక్కజొన్న, కంది",sEn:"Vanakalam: cotton, paddy, maize, red gram"},
+ {te:"నవంబర్–మార్చి",en:"Nov–Mar",sTe:"యాసంగి: వరి, మొక్కజొన్న, మిరప, కూరగాయలు",sEn:"Yasangi: paddy, maize, chilli, vegetables"},
+ {te:"ఏప్రిల్–మే",en:"Apr–May",sTe:"వేసవి: కూరగాయలు, పశుగ్రాసం",sEn:"Summer: vegetables, fodder"}
+];
+const SAMPLES = /*SAMPLES*/;
+const HI = 0.70, LO = 0.45;          /* confidence bands (deck: below 70% → ask expert) */
+
+/* ================= state ================= */
+let lang = "te", screen = "home", crop = null, result = null, acres = 1, speaking = false, voices = [];
+let session = null, modelState = "load", modelPct = 0, fbPick = false;
+const store = { hist: [] };
+try { const h = localStorage.getItem("cdai_hist"); if (h) store.hist = JSON.parse(h); const l = localStorage.getItem("cdai_lang"); if (l) lang = l; const c = localStorage.getItem("cdai_crop"); if (c && CROPS[c]) crop = c; } catch (e) {}
+function save() { try { localStorage.setItem("cdai_hist", JSON.stringify(store.hist.slice(0, 40))); localStorage.setItem("cdai_lang", lang); if (crop) localStorage.setItem("cdai_crop", crop); } catch (e) {} }
+const t = (k) => { const v = UI[k]; return v ? v[lang] : k; };
+const L = (o, k) => o[k + (lang === "te" ? "Te" : "En")];
+const N = (o) => o[lang];
+const $ = (s) => document.querySelector(s);
+const view = $("#view");
+const fmtPct = (p) => Math.round(p * 100) + "%";
+
+/* ================= icons ================= */
+const IC = {
+ cam:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11h5l2-3h10l2 3h5v15H4z"/><circle cx="16" cy="18" r="5"/></svg>',
+ img:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="6" width="24" height="20" rx="3"/><circle cx="12" cy="13" r="2.5"/><path d="M5 24l7-7 5 5 4-4 6 6"/></svg>',
+ spk:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h5l7-6v20l-7-6H5z"/><path d="M22 11c2 2 2 8 0 10M26 8c4 4 4 12 0 16"/></svg>',
+ stop:'<svg viewBox="0 0 32 32" fill="currentColor"><rect x="8" y="8" width="16" height="16" rx="3"/></svg>',
+ yes:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 17l7 7 13-14"/></svg>',
+ no:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"><path d="M8 8l16 16M24 8L8 24"/></svg>',
+ leaf:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"><path d="M6 26C6 14 13 6 27 5c0 13-7 21-19 21z"/><path d="M6 26c6-7 11-11 16-15"/></svg>',
+ hist:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="16" r="11"/><path d="M16 9v7l5 3"/></svg>',
+ help:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 5h18v14H14l-6 5v-5H7z"/><path d="M13 10a3 3 0 1 1 4 3c-1 .5-1 1-1 2"/></svg>',
+ wa:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"><path d="M6 26l1.6-5A10 10 0 1 1 11 24.4z"/></svg>',
+ copy:'<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"><rect x="10" y="10" width="16" height="17" rx="2"/><path d="M6 22V5h15"/></svg>'
+};
+
+/* ================= toast ================= */
+let tt; function toast(m) { const el = $("#toast"); el.textContent = m; el.classList.remove("hidden"); clearTimeout(tt); tt = setTimeout(() => el.classList.add("hidden"), 3800); }
+
+/* ================= model ================= */
+async function loadModel() {
+  try {
+    ort.env.wasm.wasmPaths = new URL("ort/", location.href).href;
+    ort.env.wasm.numThreads = 1;
+    const res = await fetch(MODEL.file);
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const total = +res.headers.get("content-length") || MODEL.bytes;
+    const reader = res.body.getReader(); const chunks = []; let got = 0;
+    for (;;) { const { done, value } = await reader.read(); if (done) break; chunks.push(value); got += value.length; modelPct = Math.min(99, Math.round(got / total * 100)); paintStatus(); }
+    const buf = new Uint8Array(got); let o = 0; for (const c of chunks) { buf.set(c, o); o += c.length; }
+    session = await ort.InferenceSession.create(buf, { executionProviders: ["wasm"], graphOptimizationLevel: "all" });
+    modelState = "ok";
+  } catch (e) { console.error(e); modelState = "err"; }
+  paintStatus(); if (screen === "home") renderHome();
+}
+function paintStatus() {
+  const el = $("#mstat"); if (!el) return;
+  el.className = "status " + (modelState === "ok" ? "ok" : modelState === "err" ? "err" : "");
+  el.innerHTML = '<span class="d"></span>' + (modelState === "ok" ? t("mOk") : modelState === "err" ? t("mErr") : t("mLoad") + " " + modelPct + "%");
+}
+
+/* preprocess: short side 256 → centre 224 crop, ImageNet normalisation; also simple photo-quality checks */
+function prep(img) {
+  const s = 256 / Math.min(img.naturalWidth || img.width, img.naturalHeight || img.height);
+  const w = Math.round((img.naturalWidth || img.width) * s), h = Math.round((img.naturalHeight || img.height) * s);
+  const c = document.createElement("canvas"); c.width = 224; c.height = 224;
+  const g = c.getContext("2d", { willReadFrequently: true });
+  g.imageSmoothingQuality = "high";
+  g.drawImage(img, (224 - w) / 2, (224 - h) / 2, w, h);
+  const px = g.getImageData(0, 0, 224, 224).data;
+  const N2 = 224 * 224, x = new Float32Array(3 * N2), gray = new Float32Array(N2);
+  const M = [0.485, 0.456, 0.406], S = [0.229, 0.224, 0.225]; let sum = 0;
+  for (let i = 0; i < N2; i++) {
+    const r = px[i * 4] / 255, gg = px[i * 4 + 1] / 255, b = px[i * 4 + 2] / 255;
+    x[i] = (r - M[0]) / S[0]; x[N2 + i] = (gg - M[1]) / S[1]; x[2 * N2 + i] = (b - M[2]) / S[2];
+    const l = 0.299 * r + 0.587 * gg + 0.114 * b; gray[i] = l; sum += l;
+  }
+  const mean = sum / N2; let lap = 0, lm = 0, n = 0;
+  for (let yy = 1; yy < 223; yy++) for (let xx = 1; xx < 223; xx++) {
+    const i = yy * 224 + xx; const v = 4 * gray[i] - gray[i - 1] - gray[i + 1] - gray[i - 224] - gray[i + 224];
+    lap += v * v; lm += v; n++;
+  }
+  const blurVar = lap / n - (lm / n) ** 2;
+  const thumb = document.createElement("canvas"); thumb.width = thumb.height = 96; thumb.getContext("2d").drawImage(c, 0, 0, 96, 96);
+  return { x, mean, blurVar, thumb: thumb.toDataURL("image/jpeg", 0.7) };
+}
+function softmax(a) { const m = Math.max(...a); const e = a.map(v => Math.exp(v - m)); const s = e.reduce((p, q) => p + q, 0); return e.map(v => v / s); }
+
+async function analyse(img, photoUrl) {
+  if (!crop) { toast(t("needCrop")); return; }
+  if (modelState !== "ok") { toast(modelState === "err" ? t("mErr") : t("mLoad") + "…"); return; }
+  stopSpeak(); screen = "scan"; result = { photo: photoUrl }; render();
+  await new Promise(r => setTimeout(r, 30));
+  const t0 = performance.now();
+  const p = prep(img);
+  const out = await session.run({ [session.inputNames[0]]: new ort.Tensor("float32", p.x, [1, 3, 224, 224]) });
+  const logits = Array.from(out[session.outputNames[0]].data);
+  const ms = Math.round(performance.now() - t0);
+  const all = softmax(logits);
+  const idx = MODEL.classes.map((c, i) => i).filter(i => MODEL.classes[i].startsWith(crop + "__"));
+  const sub = softmax(idx.map(i => logits[i]));
+  const ranked = idx.map((i, k) => ({ c: MODEL.classes[i], p: sub[k] })).sort((a, b) => b.p - a.p);
+  /* crop check: which crop does the whole model believe this is? */
+  const cropMass = {}; MODEL.classes.forEach((c, i) => { const k = c.split("__")[0]; cropMass[k] = (cropMass[k] || 0) + all[i]; });
+  const bestCrop = Object.keys(cropMass).sort((a, b) => cropMass[b] - cropMass[a])[0];
+  const mismatch = bestCrop !== crop && cropMass[bestCrop] > 0.8 && cropMass[crop] < 0.1 ? bestCrop : null;
+  const q = []; if (p.mean < 0.18) q.push("dark"); if (p.mean > 0.88) q.push("bright"); if (p.blurVar < MODEL.blurMin) q.push("blur");
+  let top = ranked[0].p; if (mismatch) top = Math.min(top, 0.44);
+  const band = top >= HI ? "hi" : top >= LO ? "mid" : "lo";
+  result = { photo: photoUrl, thumb: p.thumb, crop, ranked, top, band, q, mismatch, ms, fb: null, time: Date.now() };
+  store.hist.unshift({ t: result.time, crop, c: ranked[0].c, p: +top.toFixed(3), band, thumb: p.thumb, fb: null });
+  save(); fbPick = false; screen = "result"; render(); window.scrollTo(0, 0);
+}
+function loadImage(url) { return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; }); }
+async function onFile(e) {
+  const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+  const url = URL.createObjectURL(f);
+  try { const img = await loadImage(url); analyse(img, url); } catch (err) { toast(t("openFail")); }
+}
+$("#cam").addEventListener("change", onFile); $("#gal").addEventListener("change", onFile);
+
+/* ================= voice ================= */
+function loadVoices() { try { voices = speechSynthesis.getVoices(); } catch (e) {} }
+if ("speechSynthesis" in window) { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
+function speak(text) {
+  if (!("speechSynthesis" in window)) { toast(t("novoice")); return; }
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text); const v = voices.find(v => /^te/i.test(v.lang));
+    if (!v) toast(t("novoice"));
+    u.lang = "te-IN"; if (v) u.voice = v; u.rate = 0.9;
+    u.onend = u.onerror = () => { speaking = false; paintListen(); };
+    speaking = true; speechSynthesis.speak(u); paintListen();
+  } catch (e) { toast(t("novoice")); }
+}
+function stopSpeak() { try { speechSynthesis.cancel(); } catch (e) {} speaking = false; paintListen(); }
+function paintListen() { const b = $("#listen"); if (b) b.innerHTML = speaking ? IC.stop + t("stop") : IC.spk + t("listen"); }
+function spoken(r) {
+  if (r.band === "lo") return UI.loNote.te;
+  const a = ADVICE[r.ranked[0].c];
+  let s = `${CROPS[r.crop].te}. ${a.te}. ${Math.round(r.top * 100)} శాతం ఖచ్చితం. ${a.whatTe} ` + a.stepsTe.join(" ");
+  a.spray.forEach(sp => { s += sp.acre ? ` ${sp.te}, ఎకరానికి ${sp.acre.replace("kg", "కిలోలు")}.` : ` ${sp.te}, లీటరు నీటికి ${sp.d} ${sp.u === "g" ? "గ్రాములు" : "మిల్లీలీటర్లు"}.`; });
+  return s + " " + UI.safety.te[3];
+}
+
+/* ================= helpers ================= */
+function qty(v, u) {
+  if (v >= 1000) return (Math.round(v / 100) / 10) + (u === "g" ? " kg" : " L");
+  return (v < 10 ? Math.round(v * 10) / 10 : Math.round(v)) + (u === "g" ? " g" : " ml");
+}
+function season() { const m = new Date().getMonth() + 1; return SEASONS.find(s => s.m.includes(m)); }
+function msgText(r) {
+  const a = r.band !== "lo" ? ADVICE[r.ranked[0].c] : null;
+  const d = new Date(r.time).toLocaleDateString("en-IN");
+  if (lang === "te") return `నమస్కారం సార్. నా ${CROPS[r.crop].te} పంటలో ఆకుకు సమస్య ఉంది.\nCropDoc AI ఫలితం: ${a ? a.te : "తెలియలేదు"} (${fmtPct(r.top)}).\nతేదీ: ${d}. ప్రాంతం: హైదరాబాద్ దగ్గర.\nఫోటో జత చేస్తున్నాను. దయచేసి సలహా ఇవ్వండి.`;
+  return `Hello sir. My ${CROPS[r.crop].en} crop has a leaf problem.\nCropDoc AI result: ${a ? a.en : "not identified"} (${fmtPct(r.top)}).\nDate: ${d}. Area: near Hyderabad.\nI am attaching the photo. Please advise.`;
+}
+async function copyText(s) { try { await navigator.clipboard.writeText(s); toast(t("copied")); } catch (e) { toast(t("copyFail")); } }
+
+/* ================= render ================= */
+function setNav() {
+  const items = [["home", "nHome", IC.leaf], ["hist", "nHist", IC.hist], ["help", "nHelp", IC.help]];
+  $("#nav").innerHTML = items.map(([k, l, i]) => `<button data-go="${k}" ${(screen === k || (k === "home" && (screen === "result" || screen === "scan"))) ? 'aria-current="page"' : ""}>${i}${t(l)}</button>`).join("");
+  $("#nav").querySelectorAll("button").forEach(b => b.onclick = () => go(b.dataset.go));
+}
+function go(s) { stopSpeak(); screen = s; render(); window.scrollTo(0, 0); }
+
+function renderHome() {
+  const s = season();
+  view.innerHTML = `
+  <div class="season"><b>${N(s)} · ${lang === "te" ? "ఇప్పుడు" : "now"}</b><p>${L(s, "watch")}</p></div>
+  <section><div class="step-h"><i>1</i>${t("pickCrop")}</div>
+   <div class="crops" style="margin-top:8px">${Object.keys(CROPS).map(k => `<button class="crop" data-crop="${k}" aria-pressed="${crop === k}"><img src="crops/${k}.jpg" alt="">${N(CROPS[k])}</button>`).join("")}</div></section>
+  <section style="display:flex;flex-direction:column;gap:10px"><div class="step-h"><i>2</i>${t("snap")}</div>
+   <button class="btn btn-main" id="bCam" ${crop && modelState === "ok" ? "" : "disabled"}>${IC.cam}${t("take")}</button>
+   <button class="btn btn-alt" id="bGal" ${crop && modelState === "ok" ? "" : "disabled"}>${IC.img}${t("gal")}</button>
+   ${crop ? "" : `<p class="muted center">${t("needCrop")}</p>`}
+   <div class="status" id="mstat"></div></section>
+  <section class="card"><h2>${t("tipsH")}</h2><ul class="tips">${UI.tips[lang].map(x => `<li>${x}</li>`).join("")}</ul></section>
+  <section><h2>${t("tryS")}</h2><p class="muted" style="margin-bottom:8px">${t("trySub")}</p>
+   <div class="samples">${SAMPLES.map((s, i) => `<button class="sample" data-s="${i}"><img src="${s.file}" alt="" loading="lazy">${N(CROPS[s.crop])}<br><span class="muted">${N(ADVICE[s.c])}</span></button>`).join("")}</div></section>`;
+  paintStatus();
+  view.querySelectorAll(".crop").forEach(b => b.onclick = () => { crop = b.dataset.crop; save(); renderHome(); });
+  const bc = $("#bCam"), bg = $("#bGal");
+  bc.onclick = () => $("#cam").click(); bg.onclick = () => $("#gal").click();
+  view.querySelectorAll(".sample").forEach(b => b.onclick = async () => {
+    const s = SAMPLES[+b.dataset.s]; crop = s.crop; save();
+    try { const img = await loadImage(s.file); analyse(img, s.file); } catch (e) { toast(t("openFail")); }
+  });
+}
+function renderScan() {
+  view.innerHTML = `${result && result.photo ? `<img class="photo" src="${result.photo}" alt="">` : ""}<div class="center"><div class="spinner" role="progressbar" aria-label="${t("scanning")}"></div><h1>${t("scanning")}</h1></div>`;
+}
+function sprayCard(sp) {
+  if (sp.acre) return `<div class="spray"><b>${N(sp)}</b><div class="dose"><div><strong>${sp.acre}</strong>${t("perAcre")}</div><div><strong>${(parseFloat(sp.acre) * acres).toString().replace(/\.0+$/, "")} kg</strong>${t("perField")}</div><div><strong>—</strong>${lang === "te" ? "ఇసుకతో కలిపి చల్లండి" : "mix with sand"}</div></div></div>`;
+  return `<div class="spray"><b>${N(sp)}</b><div class="dose">
+    <div><strong>${qty(sp.d, sp.u)}</strong>${t("perL")}</div>
+    <div><strong>${qty(sp.d * 16, sp.u)}</strong>${t("perTank")}</div>
+    <div><strong>${qty(sp.d * 200 * acres, sp.u)}</strong>${t("perField")}</div></div></div>`;
+}
+function renderResult() {
+  const r = result; const a = ADVICE[r.ranked[0].c];
+  const cls = r.band === "lo" ? "warn" : r.band === "mid" ? "warn" : a.sev === 0 ? "ok" : a.sev >= 3 ? "bad" : "warn";
+  const qWarn = r.q.map(k => `<div class="alert">${t(k)}</div>`).join("");
+  const mm = r.mismatch ? `<div class="alert">${t("mismatch").replace("{c}", N(CROPS[r.mismatch]))}<button class="btn btn-alt" id="swap">${t("switchTo").replace("{c}", N(CROPS[r.mismatch]))}</button></div>` : "";
+  const head = r.band === "lo"
+    ? `<div class="verdict warn"><div class="chips"><span class="chip">${N(CROPS[r.crop])}</span><span class="chip">${t("bandLo")}</span></div>
+       <div class="name">${t("loTitle")}</div><div class="meter"><span style="width:${Math.round(r.top * 100)}%"></span></div>
+       <div class="meter-label"><span>${t("sure")}</span><span>${fmtPct(r.top)}</span></div><p style="margin-top:10px">${t("loNote")}</p></div>`
+    : `<div class="verdict ${cls}"><div class="chips"><span class="chip">${N(CROPS[r.crop])}</span><span class="chip">${N(TYPE[a.t])}</span><span class="chip">${r.band === "hi" ? t("bandHi") : t("bandMid")}</span></div>
+       <div class="name">${N(a)}</div><div class="meter"><span style="width:${Math.round(r.top * 100)}%"></span></div>
+       <div class="meter-label"><span>${t("sure")}</span><span>${fmtPct(r.top)}</span></div>
+       ${r.band === "mid" ? `<p style="margin-top:10px;font-size:16px">${t("midNote")}</p>` : ""}</div>`;
+  const advice = r.band === "lo" ? "" : `
+    <section class="card"><h2>${t("what")}</h2><p>${L(a, "what")}</p></section>
+    <section class="card"><h2>${t("todo")}</h2><ol class="steps">${L(a, "steps").map(x => `<li>${x}</li>`).join("")}</ol></section>
+    <section class="card" style="display:flex;flex-direction:column;gap:10px"><h2 style="margin:0">${t("med")}</h2>
+      ${a.spray.length ? `
+       <div class="acres"><span style="font-weight:700">${t("acres")}</span><div class="ctl"><button id="aMinus" aria-label="-">−</button><output id="aVal">${acres}</output><button id="aPlus" aria-label="+">+</button></div></div>
+       <div id="sprays" style="display:flex;flex-direction:column;gap:10px">${a.spray.map(sprayCard).join("")}</div>
+       <p class="muted">${t("tanks")}${a.spray.length > 1 ? " " + t("oneMed") : ""}</p>
+       <ul class="safety">${UI.safety[lang].map(x => `<li>${x}</li>`).join("")}</ul>` : `<p>${t("noSpray")}</p>`}
+    </section>`;
+  const alts = `<section class="card"><h2>${t("alts")}</h2><div class="alts">${r.ranked.slice(r.band === "lo" ? 0 : 1, 4).map(x => `<div class="alt"><span>${N(ADVICE[x.c])}</span><span>${fmtPct(x.p)}</span></div>`).join("")}</div></section>`;
+  const fb = r.fb ? `<p class="thanks">${t("thanks")}</p>` : fbPick
+    ? `<p>${t("whichOne")}</p><div class="pick">${r.ranked.slice(0, 6).map(x => `<button data-pick="${x.c}">${N(ADVICE[x.c])}</button>`).join("")}<button data-pick="unknown">${t("dunno")}</button></div>`
+    : `<div class="fb"><button class="btn btn-soft" data-fb="y">${IC.yes}${t("yes")}</button><button class="btn btn-soft" data-fb="n">${IC.no}${t("no")}</button></div>`;
+  const msg = msgText(r);
+  view.innerHTML = `
+    ${r.photo ? `<img class="photo" src="${r.photo}" alt="${t("photoOf")}">` : ""}
+    ${head}${mm}${qWarn}
+    <button class="btn btn-main" id="listen">${IC.spk}${t("listen")}</button>
+    ${advice}${alts}
+    <section class="card"><h2>${t("right")}</h2>${fb}</section>
+    <section class="card" style="display:flex;flex-direction:column;gap:10px"><h2 style="margin:0">${t("ask")}</h2><p class="muted">${t("askSub")}</p>
+      <textarea id="msg" aria-label="${t("ask")}">${msg}</textarea>
+      <div style="display:flex;flex-direction:column;gap:10px"><button class="btn btn-soft" id="copyMsg">${IC.copy}${t("copy")}</button>
+      <a class="btn btn-alt" id="waMsg" href="https://wa.me/?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">${IC.wa}${t("wa")}</a></div>
+      <p class="muted">${t("kcc")}: <b>1800-180-1551</b></p></section>
+    <button class="btn btn-alt" id="again">${IC.cam}${t("again")}</button>
+    <p class="muted center">AI ${r.ms} ms · ${t("disclaim")}</p>`;
+  paintListen();
+  $("#listen").onclick = () => speaking ? stopSpeak() : speak(spoken(r));
+  $("#again").onclick = () => go("home");
+  $("#copyMsg").onclick = () => copyText($("#msg").value);
+  $("#msg").oninput = () => { $("#waMsg").href = "https://wa.me/?text=" + encodeURIComponent($("#msg").value); };
+  const sw = $("#swap"); if (sw) sw.onclick = async () => { crop = r.mismatch; save(); const img = await loadImage(r.photo); analyse(img, r.photo); };
+  const am = $("#aMinus"), ap = $("#aPlus");
+  const upd = () => { $("#aVal").textContent = acres; $("#sprays").innerHTML = a.spray.map(sprayCard).join(""); };
+  if (am) { am.onclick = () => { acres = Math.max(0.5, acres - 0.5); upd(); }; ap.onclick = () => { acres = Math.min(50, acres + 0.5); upd(); }; }
+  view.querySelectorAll("[data-fb]").forEach(b => b.onclick = () => {
+    if (b.dataset.fb === "y") { setFb("ok"); } else { fbPick = true; renderResult(); }
+  });
+  view.querySelectorAll("[data-pick]").forEach(b => b.onclick = () => setFb(b.dataset.pick));
+}
+function setFb(v) { result.fb = v; const h = store.hist.find(x => x.t === result.time); if (h) h.fb = v; save(); renderResult(); }
+
+function renderHist() {
+  const rows = store.hist.length ? store.hist.map(h => {
+    const a = ADVICE[h.c]; const dt = new Date(h.t).toLocaleDateString(lang === "te" ? "te-IN" : "en-IN", { day: "numeric", month: "short" });
+    const col = h.band === "lo" ? "var(--sun)" : a.sev === 0 ? "var(--leaf)" : a.sev >= 3 ? "var(--alarm)" : "var(--sun)";
+    const fbTag = h.fb ? (h.fb === "ok" ? " · ✓" : " · ✗") : "";
+    return `<div class="card hist"><img src="${h.thumb || ""}" alt=""><div><b>${h.band === "lo" ? t("bandLo") : N(a)}</b><br><span class="muted">${N(CROPS[h.crop])} · ${dt}${fbTag}</span></div><span class="dot" style="background:${col}"></span><span class="pill">${fmtPct(h.p)}</span></div>`;
+  }).join("") : `<p class="muted">${t("noHist")}</p>`;
+  view.innerHTML = `<h1>${t("hist")}</h1><p class="muted">${t("histNote")}</p>${rows}
+   ${store.hist.length ? `<section class="card"><h2>${t("exportH")}</h2><button class="btn btn-soft" id="csv">${IC.copy}${t("exportB")}</button></section>` : ""}`;
+  const c = $("#csv"); if (c) c.onclick = () => copyText("time,crop,prediction,confidence,band,farmer_feedback\n" + store.hist.map(h => [new Date(h.t).toISOString(), h.crop, h.c, h.p, h.band, h.fb || ""].join(",")).join("\n"));
+}
+function renderHelp() {
+  const rows = MODEL.metrics.map(m => `<tr><td>${N(CROPS[m.crop])}</td><td>${m.n}</td><td>${fmtPct(m.acc)}</td></tr>`).join("");
+  view.innerHTML = `<h1>${t("help")}</h1>
+   <section class="card contact"><span>${t("kcc")}</span><a class="num" href="tel:18001801551">1800-180-1551</a><span class="muted">${t("kccT")}</span></section>
+   <section class="card contact"><span>${t("kvk")}</span><a class="num" href="tel:04024200732">040-2420 0732</a><span class="muted">${t("kvkT")}</span></section>
+   <section class="card contact"><span>${t("aeo")}</span><span class="muted">${t("aeoT")}</span></section>
+   <section class="card"><h2>${t("calH")}</h2><table class="cal">${CAL.map(c => `<tr><td>${N(c)}</td><td>${L(c, "s")}</td></tr>`).join("")}</table></section>
+   <section class="card"><h2>${t("aboutH")}</h2>
+    <p style="font-size:16px">${lang === "te"
+      ? `MobileNetV3 AI, ${MODEL.nTrain.toLocaleString("en-IN")} ఆకు ఫోటోలపై శిక్షణ పొందింది. 5 పంటలు, ${MODEL.classes.length} సమస్యలు. ఫోటో మీ ఫోన్ దాటి వెళ్లదు. శిక్షణలో వాడని ${MODEL.nTest.toLocaleString("en-IN")} పరీక్ష ఫోటోలపై ఫలితం:`
+      : `A MobileNetV3 AI trained on ${MODEL.nTrain.toLocaleString("en-IN")} leaf photos. 5 crops, ${MODEL.classes.length} problems. Your photo never leaves your phone. Results on ${MODEL.nTest.toLocaleString("en-IN")} test photos it never saw:`}</p>
+    <table class="m" style="margin-top:8px"><tr><th>${lang === "te" ? "పంట" : "Crop"}</th><th>${lang === "te" ? "ఫోటోలు" : "Photos"}</th><th>${lang === "te" ? "సరైనవి" : "Correct"}</th></tr>${rows}</table>
+    <p class="muted" style="margin-top:8px">${lang === "te" ? "గమనిక: టమాటా ఫోటోలు ల్యాబ్‌లో తీసినవి. పొలంలో ఖచ్చితత్వం తక్కువ ఉండవచ్చు." : "Note: tomato photos were taken in a lab. Accuracy in the field may be lower."}</p></section>
+   <p class="muted">${t("disclaim")}</p>`;
+}
+function render() {
+  document.documentElement.lang = lang;
+  $("#region").textContent = t("region");
+  $("#lte").setAttribute("aria-pressed", lang === "te"); $("#len").setAttribute("aria-pressed", lang === "en");
+  ({ home: renderHome, scan: renderScan, result: renderResult, hist: renderHist, help: renderHelp })[screen]();
+  setNav();
+}
+$("#lte").onclick = () => { lang = "te"; save(); render(); };
+$("#len").onclick = () => { lang = "en"; save(); render(); };
+render();
+loadModel();
+</script>
+</body>
+</html>

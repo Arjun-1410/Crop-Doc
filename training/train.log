@@ -1,0 +1,45 @@
+ep0 it0/459 loss 3.682 3s
+ep0 it50/459 loss 3.374 84s
+ep0 it100/459 loss 2.745 168s
+ep0 it150/459 loss 2.424 248s
+ep0 it200/459 loss 2.256 329s
+ep0 it250/459 loss 2.133 409s
+ep0 it300/459 loss 2.041 486s
+ep0 it350/459 loss 1.963 564s
+ep0 it400/459 loss 1.897 640s
+ep0 it450/459 loss 1.850 712s
+== epoch 0 val acc 0.8243 time 767s
+ep1 it0/459 loss 1.149 769s
+ep1 it50/459 loss 1.357 1036s
+ep1 it100/459 loss 1.353 1258s
+ep1 it150/459 loss 1.334 1347s
+ep1 it200/459 loss 1.333 1426s
+ep1 it250/459 loss 1.321 1503s
+ep1 it300/459 loss 1.313 1582s
+ep1 it350/459 loss 1.304 1664s
+ep1 it400/459 loss 1.295 1743s
+ep1 it450/459 loss 1.286 1821s
+== epoch 1 val acc 0.9040 time 1881s
+ep2 it0/459 loss 1.089 1883s
+ep2 it50/459 loss 1.192 1957s
+ep2 it100/459 loss 1.170 2032s
+ep2 it150/459 loss 1.149 2106s
+ep2 it200/459 loss 1.142 2180s
+ep2 it250/459 loss 1.128 2254s
+ep2 it300/459 loss 1.121 2328s
+ep2 it350/459 loss 1.113 2403s
+ep2 it400/459 loss 1.108 2483s
+ep2 it450/459 loss 1.103 2563s
+== epoch 2 val acc 0.9367 time 2621s
+ep3 it0/459 loss 1.106 2623s
+ep3 it50/459 loss 0.990 2696s
+ep3 it100/459 loss 1.005 2767s
+ep3 it150/459 loss 1.008 2837s
+ep3 it200/459 loss 1.005 2908s
+ep3 it250/459 loss 1.004 2984s
+ep3 it300/459 loss 1.001 3055s
+ep3 it350/459 loss 0.998 3126s
+ep3 it400/459 loss 0.997 3198s
+ep3 it450/459 loss 0.996 3272s
+== epoch 3 val acc 0.9514 time 3326s
+BEST 0.9514457174031642

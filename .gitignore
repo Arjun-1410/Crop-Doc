@@ -1,0 +1,7 @@
+data/
+weights/
+training/best.pt
+training/split.json
+node_modules/
+__pycache__/
+*.pyc

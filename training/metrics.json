@@ -1,0 +1,255 @@
+{
+ "overall_unmasked": 0.9356246590289143,
+ "overall_crop_selected": 0.9356246590289143,
+ "share_confident": 0.8832515002727769,
+ "acc_when_confident": 0.9771463866584311,
+ "acc_when_mid": 0.6909090909090909,
+ "share_low": 0.02673213311511184,
+ "per_crop": [
+  {
+   "crop": "paddy",
+   "n": 600,
+   "acc": 0.875
+  },
+  {
+   "crop": "cotton",
+   "n": 211,
+   "acc": 0.9526
+  },
+  {
+   "crop": "maize",
+   "n": 267,
+   "acc": 0.9588
+  },
+  {
+   "crop": "chilli",
+   "n": 55,
+   "acc": 0.8
+  },
+  {
+   "crop": "tomato",
+   "n": 700,
+   "acc": 0.9843
+  }
+ ],
+ "per_class": [
+  {
+   "c": "paddy__bacterial_leaf_blight",
+   "n": 47,
+   "acc": 0.894,
+   "top_confusion": "paddy__blast"
+  },
+  {
+   "c": "paddy__bacterial_leaf_streak",
+   "n": 38,
+   "acc": 0.947,
+   "top_confusion": "paddy__brown_spot"
+  },
+  {
+   "c": "paddy__bacterial_panicle_blight",
+   "n": 33,
+   "acc": 1.0,
+   "top_confusion": null
+  },
+  {
+   "c": "paddy__blast",
+   "n": 70,
+   "acc": 0.829,
+   "top_confusion": "paddy__downy_mildew"
+  },
+  {
+   "c": "paddy__brown_spot",
+   "n": 70,
+   "acc": 0.829,
+   "top_confusion": "paddy__blast"
+  },
+  {
+   "c": "paddy__dead_heart",
+   "n": 70,
+   "acc": 0.943,
+   "top_confusion": "paddy__bacterial_panicle_blight"
+  },
+  {
+   "c": "paddy__downy_mildew",
+   "n": 62,
+   "acc": 0.903,
+   "top_confusion": "paddy__bacterial_leaf_streak"
+  },
+  {
+   "c": "paddy__hispa",
+   "n": 70,
+   "acc": 0.829,
+   "top_confusion": "paddy__tungro"
+  },
+  {
+   "c": "paddy__normal",
+   "n": 70,
+   "acc": 0.843,
+   "top_confusion": "paddy__hispa"
+  },
+  {
+   "c": "paddy__tungro",
+   "n": 70,
+   "acc": 0.843,
+   "top_confusion": "paddy__brown_spot"
+  },
+  {
+   "c": "cotton__bacterial_blight",
+   "n": 25,
+   "acc": 0.96,
+   "top_confusion": "cotton__leaf_hopper_jassids"
+  },
+  {
+   "c": "cotton__curl_virus",
+   "n": 43,
+   "acc": 0.93,
+   "top_confusion": "cotton__healthy_leaf"
+  },
+  {
+   "c": "cotton__healthy_leaf",
+   "n": 25,
+   "acc": 1.0,
+   "top_confusion": null
+  },
+  {
+   "c": "cotton__herbicide_growth_damage",
+   "n": 28,
+   "acc": 1.0,
+   "top_confusion": null
+  },
+  {
+   "c": "cotton__leaf_hopper_jassids",
+   "n": 22,
+   "acc": 0.955,
+   "top_confusion": "cotton__healthy_leaf"
+  },
+  {
+   "c": "cotton__leaf_redding",
+   "n": 57,
+   "acc": 0.912,
+   "top_confusion": "cotton__leaf_hopper_jassids"
+  },
+  {
+   "c": "cotton__leaf_variegation",
+   "n": 11,
+   "acc": 1.0,
+   "top_confusion": null
+  },
+  {
+   "c": "maize__blight",
+   "n": 70,
+   "acc": 0.9,
+   "top_confusion": "maize__gray_leaf_spot"
+  },
+  {
+   "c": "maize__common_rust",
+   "n": 70,
+   "acc": 0.957,
+   "top_confusion": "maize__gray_leaf_spot"
+  },
+  {
+   "c": "maize__gray_leaf_spot",
+   "n": 57,
+   "acc": 0.982,
+   "top_confusion": "maize__blight"
+  },
+  {
+   "c": "maize__healthy",
+   "n": 70,
+   "acc": 1.0,
+   "top_confusion": null
+  },
+  {
+   "c": "tomato__bacterial_spot",
+   "n": 70,
+   "acc": 1.0,
+   "top_confusion": null
+  },
+  {
+   "c": "tomato__early_blight",
+   "n": 70,
+   "acc": 0.986,
+   "top_confusion": "tomato__late_blight"
+  },
+  {
+   "c": "tomato__healthy",
+   "n": 70,
+   "acc": 1.0,
+   "top_confusion": null
+  },
+  {
+   "c": "tomato__late_blight",
+   "n": 70,
+   "acc": 0.986,
+   "top_confusion": "tomato__healthy"
+  },
+  {
+   "c": "tomato__leaf_mold",
+   "n": 70,
+   "acc": 1.0,
+   "top_confusion": null
+  },
+  {
+   "c": "tomato__septoria_leaf_spot",
+   "n": 70,
+   "acc": 0.943,
+   "top_confusion": "tomato__early_blight"
+  },
+  {
+   "c": "tomato__spider_mites_two_spotted_spider_mite",
+   "n": 70,
+   "acc": 0.971,
+   "top_confusion": "tomato__healthy"
+  },
+  {
+   "c": "tomato__target_spot",
+   "n": 70,
+   "acc": 1.0,
+   "top_confusion": null
+  },
+  {
+   "c": "tomato__tomato_mosaic_virus",
+   "n": 70,
+   "acc": 1.0,
+   "top_confusion": null
+  },
+  {
+   "c": "tomato__tomato_yellow_leaf_curl_virus",
+   "n": 70,
+   "acc": 0.957,
+   "top_confusion": "tomato__bacterial_spot"
+  },
+  {
+   "c": "chilli__cercospora",
+   "n": 15,
+   "acc": 0.933,
+   "top_confusion": "chilli__nutritional"
+  },
+  {
+   "c": "chilli__healthy",
+   "n": 10,
+   "acc": 0.8,
+   "top_confusion": "chilli__murda_complex_mites_trips"
+  },
+  {
+   "c": "chilli__murda_complex_mites_trips",
+   "n": 10,
+   "acc": 0.5,
+   "top_confusion": "chilli__healthy"
+  },
+  {
+   "c": "chilli__nutritional",
+   "n": 10,
+   "acc": 0.7,
+   "top_confusion": "chilli__cercospora"
+  },
+  {
+   "c": "chilli__powdery_mildew",
+   "n": 10,
+   "acc": 1.0,
+   "top_confusion": null
+  }
+ ],
+ "n_train": 14693,
+ "n_test": 1833
+}
